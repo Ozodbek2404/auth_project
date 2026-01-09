@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from .models import User, VIA_EMAIL, VIA_PHONE
-from shared.utility import email_or_phone_number
+from shared.utility import email_or_phone
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -32,18 +32,24 @@ class SignUpSerializer(serializers.ModelSerializer):
             code = user.generate_code(VIA_PHONE)
             print(code)
             # send_phone_number_sms(user.phone_number, code)
+        else:
+            data = {
+                'success': 'False',
+                'message': 'Telefon raqam uoki email togri kiriting'
+            }
+            raise ValidationError(data)
         user.save()
         return user
 
     def validate(self, data):
-        super(SignUpSerializer, self).validate(data)
         data = self.auth_validate(data)
         return data
 
     @staticmethod
     def auth_validate(data):
         user_input = str(data.get('email_phone_number'))
-        user_input_type = email_or_phone_number(user_input)
+        user_input_type = email_or_phone(user_input)
+        print(user_input_type)
         if user_input_type == 'email':
             data = {
                 'email': user_input,
@@ -59,21 +65,19 @@ class SignUpSerializer(serializers.ModelSerializer):
                 'success': 'False',
                 'message': 'Telefon raqam yoki email kiriting'
             }
-            raise ValidationError
+            raise ValidationError(data)
 
         return data
 
     def validate_email_phone_number(self, value):
+        value = value.lower()
         if value and User.objects.filter(email=value).exists():
-            data = {
-                'success': 'False',
-                'message': 'Bu email oldin royxatdan otgan'
-            }
-            raise ValidationError(data)
+            raise ValidationError('Bu email allaqachon mavjud')
         elif value and User.objects.filter(phone_number=value).exists():
-            data = {
-                'success': 'False',
-                'message': 'Bu telefon raqam orqali oldin royxatdan otilgan'
-            }
-            raise ValidationError(data)
+            raise ValidationError('Bu telefon raqam allaqachon mavjud')
         return value
+
+    def to_representation(self, instance):
+        data = super(SignUpSerializer, self).to_representation(isinstance)
+        data.update(instance.token())
+        return data

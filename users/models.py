@@ -34,7 +34,7 @@ class User(AbstractUser, BaseModel):
     auth_status = models.CharField(max_length=29, choices=AUTH_STATUS, default=NEW)
     auth_type = models.CharField(max_length=29, choices=AUTH_TYPE)
     phone_number = models.CharField(max_length=13, null=True, blank=True, unique=True)
-    email = models.EmailField(unique=True, blank=False, null=False)
+    email = models.EmailField(unique=True, blank=True, null=True)
     photo = models.ImageField(upload_to='users_photo/', null=True, \
                               blank=True,
                               validators=[FileExtensionValidator(allowed_extensions=['png', 'jpg', 'jpeg'])])
@@ -52,7 +52,7 @@ class User(AbstractUser, BaseModel):
         return code
 
     def check_username(self):
-        if not self.pk:
+        if not self.username:
             temp_username = f"username{str(uuid.uuid4()).split('-')[-1]}"
             while User.objects.filter(username=temp_username).exists():
                 temp_username = f"{temp_username}{random.randint(0, 9)}"
@@ -64,22 +64,21 @@ class User(AbstractUser, BaseModel):
             self.password = temp_pass
 
     def hashing_pass(self):
-        if not self.password.startswith('pbkf2_sha256'):
+        if self.password and not self.password.startswith('pbkdf2_sha256$'):
             self.set_password(self.password)
 
     def check_email(self):
-        # normalize_email = self.email.lower()
-        # self.email = normalize_email
-        if not self.email:
-            return
-        self.email = self.email.lower()
+        if self.email:
+            normalize_email = self.email.lower()
+            self.email = normalize_email
 
     def token(self):
         refresh = RefreshToken.for_user(self)
-        return {
+        data = {
             'access': str(refresh.access_token),
-            'refresh_token': refresh
+            'refresh_token': str(refresh)
         }
+        return data
 
     def clean(self):
         self.check_username()
