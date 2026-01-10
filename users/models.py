@@ -10,7 +10,7 @@ from shared.models import BaseModel
 from rest_framework_simplejwt.tokens import RefreshToken
 
 ORDINARY_USER, MANAGER, ADMIN = ('ordinary_user', 'manager', 'admin',)
-NEW, CODE_VERIFIET, DONE, PHOTO_DONE = ('new', 'code_verifiet', 'done', 'photo_done')
+NEW, CODE_VERIFIED, DONE, PHOTO_DONE = ('new', 'code_verified', 'done', 'photo_done')
 VIA_EMAIL, VIA_PHONE = ('via_email', 'via_phone')
 
 
@@ -22,7 +22,7 @@ class User(AbstractUser, BaseModel):
     )
     AUTH_STATUS = (
         (NEW, NEW),
-        (CODE_VERIFIET, CODE_VERIFIET),
+        (CODE_VERIFIED, CODE_VERIFIED),
         (DONE, DONE),
         (PHOTO_DONE, PHOTO_DONE),
     )
@@ -43,7 +43,7 @@ class User(AbstractUser, BaseModel):
         return self.username
 
     def generate_code(self, verify_type):
-        code = ''.join([str(random.randint(0, 100) % 10 for _ in range(4))])
+        code = ''.join([str(random.randint(0, 100) % 10) for _ in range(4)])
         UserConfirmation.objects.create(
             user_id=self.id,
             code=code,
@@ -102,7 +102,7 @@ class UserConfirmation(BaseModel):
     )
     code = models.CharField(max_length=4)
     verify_type = models.CharField(max_length=29, choices=VERIFY_TYPE)
-    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='verify_codes')
     expiration_time = models.DateTimeField()  # 20:01 + 2 = 20:03
     confirmed = models.BooleanField(default=False)
 

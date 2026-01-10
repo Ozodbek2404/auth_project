@@ -1,6 +1,7 @@
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from .models import User, VIA_EMAIL, VIA_PHONE
+from .models import User, VIA_EMAIL, VIA_PHONE, CODE_VERIFIED, DONE, PHOTO_DONE
 from shared.utility import email_or_phone
 
 
@@ -81,3 +82,79 @@ class SignUpSerializer(serializers.ModelSerializer):
         data = super(SignUpSerializer, self).to_representation(isinstance)
         data.update(instance.token())
         return data
+
+
+class UserChangeInfoSerializer(serializers.Serializer):
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    username = serializers.CharField(required=False)
+    password = serializers.CharField(required=False)
+    confirm_password = serializers.CharField(required=False)
+
+    def validate(self, data):
+        password = data.get('password', None)
+        confirm_password = data.get('password', None)
+        if password and confirm_password and password != confirm_password:
+            data = {
+                'success': False,
+                'message': 'Parrolar mos emas'
+            }
+            raise ValidationError(data)
+
+        if password:
+            validate_password(password)
+            validate_password(confirm_password)
+
+        return data
+
+    def validate_username(self, username):
+        if username.isdigit() or len(username) < 5:
+            data = {
+                'success': False,
+                'message': 'Username talabga mos kelmaydi'
+            }
+            raise ValidationError(data)
+        return username
+
+    def validate_first_name(self, first_name):
+        if len(first_name.strip()) < 2:
+            raise ValidationError({
+                'success': False,
+                'message': 'Ism juda qisqa'
+            })
+        return first_name.strip()
+
+    def validate_last_name(self, last_name):
+        if len(last_name.strip()) < 2:
+            raise ValidationError({
+                'success': False,
+                'message': 'Familiya juda qisqa'
+            })
+        return last_name.strip()
+
+    def update(self, instance, validated_data):
+        instance.username = validated_data.get('username', instance.username)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.password = validated_data.get('password')
+        if validated_data.get('password'):
+            instance.set_password(validated_data.get('password'))
+        if instance.auth_status == CODE_VERIFIED:
+            instance.auth_status = DONE
+        instance.save()
+        return instance
+
+
+class UserPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('photo',)
+
+    def update(self, instance, validated_data):
+        instance.photo = validated_data.get('photo')
+
+        if instance.auth_status == DONE:
+            instance.auth_status = PHOTO_DONE
+
+        instance.save()
+        return instance
