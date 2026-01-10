@@ -36,7 +36,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         else:
             data = {
                 'success': 'False',
-                'message': 'Telefon raqam uoki email togri kiriting'
+                'message': 'Telefon raqam yoki emailni togri kiriting'
             }
             raise ValidationError(data)
         user.save()
@@ -64,7 +64,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         else:
             data = {
                 'success': 'False',
-                'message': 'Telefon raqam yoki email kiriting'
+                'message': 'Telefon raqam yoki emailni kiriting'
             }
             raise ValidationError(data)
 
@@ -79,7 +79,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         return value
 
     def to_representation(self, instance):
-        data = super(SignUpSerializer, self).to_representation(isinstance)
+        data = super(SignUpSerializer, self).to_representation(instance)
         data.update(instance.token())
         return data
 
@@ -93,11 +93,11 @@ class UserChangeInfoSerializer(serializers.Serializer):
 
     def validate(self, data):
         password = data.get('password', None)
-        confirm_password = data.get('password', None)
+        confirm_password = data.get('confirm_password', None)
         if password and confirm_password and password != confirm_password:
             data = {
                 'success': False,
-                'message': 'Parrolar mos emas'
+                'message': 'Parollar mos emas'
             }
             raise ValidationError(data)
 
@@ -116,33 +116,36 @@ class UserChangeInfoSerializer(serializers.Serializer):
             raise ValidationError(data)
         return username
 
-    def validate_first_name(self, first_name):
-        if len(first_name.strip()) < 2:
-            raise ValidationError({
-                'success': False,
-                'message': 'Ism juda qisqa'
-            })
-        return first_name.strip()
 
-    def validate_last_name(self, last_name):
-        if len(last_name.strip()) < 2:
-            raise ValidationError({
-                'success': False,
-                'message': 'Familiya juda qisqa'
-            })
-        return last_name.strip()
+def validate_first_name(self, first_name):
+    if len(first_name.strip()) < 2:
+        raise ValidationError({
+            'success': False,
+            'message': 'Ism juda qisqa'
+        })
+    return first_name.strip()
 
-    def update(self, instance, validated_data):
-        instance.username = validated_data.get('username', instance.username)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.password = validated_data.get('password')
-        if validated_data.get('password'):
-            instance.set_password(validated_data.get('password'))
-        if instance.auth_status == CODE_VERIFIED:
-            instance.auth_status = DONE
-        instance.save()
-        return instance
+
+def validate_last_name(self, last_name):
+    if len(last_name.strip()) < 2:
+        raise ValidationError({
+            'success': False,
+            'message': 'Familiya juda qisqa'
+        })
+    return last_name.strip()
+
+
+def update(self, instance, validated_data):
+    instance.username = validated_data.get('username', instance.username)
+    instance.last_name = validated_data.get('last_name', instance.last_name)
+    instance.first_name = validated_data.get('first_name', instance.first_name)
+    instance.password = validated_data.get('password')
+    if validated_data.get('password'):
+        instance.set_password(validated_data.get('password'))
+    if instance.auth_status == CODE_VERIFIED:
+        instance.auth_status = DONE
+    instance.save()
+    return instance
 
 
 class UserPhotoSerializer(serializers.ModelSerializer):

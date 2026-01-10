@@ -22,7 +22,7 @@ class SignUpView(CreateAPIView):
 
 
 class VerifyCode(APIView):
-    permissions_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, *args, **kwargs):
         user = self.request.user
@@ -73,7 +73,7 @@ class NewVerifyCode(APIView):
         else:
             data = {
                 'success': 'False',
-                'message': 'Telefon raqam uoki email togri kiriting'
+                'message': 'Telefon raqam yoki emailni togri kiriting'
             }
             raise ValidationError(data)
         data = {
@@ -101,7 +101,7 @@ class NewVerifyCode(APIView):
 
 
 class UserChangeView(UpdateView):
-    permission_classes = (permissions.IsAuthenticated)
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = User.objects.all()
     serializer_class = UserChangeInfoSerializer
 
@@ -111,7 +111,7 @@ class UserChangeView(UpdateView):
     def update(self, request, *args, **kwargs):
         super().update(request, *args, **kwargs)
         data = {
-            'success': False,
+            'success': True,
             'message': 'Malumotlaringiz yangilandi'
         }
         return Response(data)
@@ -119,7 +119,7 @@ class UserChangeView(UpdateView):
     def partial_update(self, request, *args, **kwargs):
         super().update(request, *args, **kwargs)
         data = {
-            'success': False,
+            'success': True,
             'message': 'Malumotlaringiz qisman yangilandi'
         }
         return Response(data)
@@ -129,8 +129,8 @@ class UserPhotoUploadView(APIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
 
-    def put(self, request, *args, **kwargs):
-        user = request.user
+    def put(self, request):
+        user = self.request.user
 
         if not request.FILES.get('photo'):
             data = {
