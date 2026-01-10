@@ -12,7 +12,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super(SignUpSerializer, self).__init__(*args, **kwargs)
-        self.fields['email_phone_number'] = serializers.CharField(write_only=True, \
+        self.fields['email_phone_number'] = serializers.CharField(write_only=True,\
                                                                   required=False)
 
     class Meta:
@@ -90,6 +90,16 @@ class UserChangeInfoSerializer(serializers.Serializer):
     username = serializers.CharField(required=False)
     password = serializers.CharField(required=False)
     confirm_password = serializers.CharField(required=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'first_name',
+            'last_name',
+            'username',
+            'password',
+            'confirm_password'
+        )
 
     def validate(self, data):
         password = data.get('password', None)
